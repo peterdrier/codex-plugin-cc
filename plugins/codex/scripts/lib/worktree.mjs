@@ -19,7 +19,7 @@ export function diffWorktreeSession(session) {
 export function cleanupWorktreeSession(session, { keep = false } = {}) {
   if (keep) {
     const result = applyWorktreePatch(session.repoRoot, session.worktreePath, session.baseCommit);
-    if (!result.applied) {
+    if (!result.applied && result.detail !== "No changes to apply.") {
       return result;
     }
     removeWorktree(session.repoRoot, session.worktreePath);

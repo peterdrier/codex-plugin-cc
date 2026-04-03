@@ -192,6 +192,14 @@ export function createWorktree(repoRoot) {
   const worktreesDir = path.join(repoRoot, ".worktrees");
   fs.mkdirSync(worktreesDir, { recursive: true });
 
+  // Ensure .worktrees/ is excluded from the target repo without modifying tracked files
+  const excludePath = path.join(repoRoot, ".git", "info", "exclude");
+  const excludeContent = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, "utf8") : "";
+  if (!excludeContent.includes(".worktrees")) {
+    fs.mkdirSync(path.dirname(excludePath), { recursive: true });
+    fs.appendFileSync(excludePath, `${excludeContent.endsWith("\n") || !excludeContent ? "" : "\n"}.worktrees/\n`);
+  }
+
   const worktreePath = path.join(worktreesDir, `codex-${ts}`);
   const branch = `codex/${ts}`;
   const baseCommit = gitChecked(repoRoot, ["rev-parse", "HEAD"]).stdout.trim();
