@@ -211,25 +211,36 @@ export function deleteWorktreeBranch(repoRoot, branch) {
 }
 
 export function getWorktreeDiff(worktreePath, baseCommit) {
-  const result = git(worktreePath, ["diff", baseCommit, "--stat"]);
+  git(worktreePath, ["add", "-A"]);
+  const result = git(worktreePath, ["diff", "--cached", baseCommit, "--stat"]);
   if (result.status !== 0 || !result.stdout.trim()) {
     return { stat: "", patch: "" };
   }
   const stat = result.stdout.trim();
-  const patchResult = gitChecked(worktreePath, ["diff", baseCommit]);
+  const patchResult = gitChecked(worktreePath, ["diff", "--cached", baseCommit]);
   return { stat, patch: patchResult.stdout };
 }
 
 export function applyWorktreePatch(repoRoot, worktreePath, baseCommit) {
-  const patchResult = git(worktreePath, ["diff", baseCommit]);
+  git(worktreePath, ["add", "-A"]);
+  const patchResult = git(worktreePath, ["diff", "--cached", baseCommit]);
   if (patchResult.status !== 0 || !patchResult.stdout.trim()) {
     return { applied: false, detail: "No changes to apply." };
   }
-  const applyResult = git(repoRoot, ["apply", "--index"], { input: patchResult.stdout });
-  if (applyResult.status !== 0) {
-    return { applied: false, detail: applyResult.stderr.trim() || "Patch apply failed (conflicts?)." };
+  const patchPath = path.join(
+    repoRoot,
+    ".codex-worktree-" + Date.now() + "-" + Math.random().toString(16).slice(2) + ".patch"
+  );
+  try {
+    fs.writeFileSync(patchPath, patchResult.stdout, "utf8");
+    const applyResult = git(repoRoot, ["apply", "--index", patchPath]);
+    if (applyResult.status !== 0) {
+      return { applied: false, detail: applyResult.stderr.trim() || "Patch apply failed (conflicts?)." };
+    }
+    return { applied: true, detail: "Changes applied and staged." };
+  } finally {
+    fs.rmSync(patchPath, { force: true });
   }
-  return { applied: true, detail: "Changes applied and staged." };
 }
 
 export function collectReviewContext(cwd, target) {
