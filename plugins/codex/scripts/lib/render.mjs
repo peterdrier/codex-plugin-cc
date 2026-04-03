@@ -445,6 +445,62 @@ export function renderStoredJobResult(job, storedJob) {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
+export function renderWorktreeTaskResult(execution, session, diff) {
+  const lines = [];
+
+  if (execution.rendered) {
+    lines.push(execution.rendered.trimEnd());
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push("");
+  lines.push("## Worktree");
+  lines.push("");
+  lines.push(`Branch: \`${session.branch}\``);
+  lines.push(`Path: \`${session.worktreePath}\``);
+  lines.push("");
+
+  if (diff.stat) {
+    lines.push("### Changes");
+    lines.push("");
+    lines.push("```");
+    lines.push(diff.stat);
+    lines.push("```");
+    lines.push("");
+  } else {
+    lines.push("Codex made no file changes in the worktree.");
+    lines.push("");
+  }
+
+  lines.push("### Actions");
+  lines.push("");
+  lines.push("Apply these changes to your working tree, or discard them:");
+  lines.push("");
+  lines.push(`- **Keep**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${execution.payload?.jobId ?? "JOB_ID"} --action keep\``);
+  lines.push(`- **Discard**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${execution.payload?.jobId ?? "JOB_ID"} --action discard\``);
+
+  return `${lines.join("\n").trimEnd()}\n`;
+}
+
+export function renderWorktreeCleanupResult(action, result, session) {
+  const lines = ["# Worktree Cleanup", ""];
+
+  if (action === "keep") {
+    if (result.applied) {
+      lines.push(`Applied changes from \`${session.branch}\` and cleaned up.`);
+    } else {
+      lines.push(`Failed to apply changes: ${result.detail}`);
+      lines.push("");
+      lines.push(`The branch \`${session.branch}\` may still be available for manual merge.`);
+    }
+  } else {
+    lines.push(`Discarded worktree \`${session.worktreePath}\` and branch \`${session.branch}\`.`);
+  }
+
+  return `${lines.join("\n").trimEnd()}\n`;
+}
+
 export function renderCancelReport(job) {
   const lines = [
     "# Codex Cancel",

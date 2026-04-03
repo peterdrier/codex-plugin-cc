@@ -187,6 +187,50 @@ function collectBranchContext(cwd, baseRef) {
   };
 }
 
+export function createWorktree(repoRoot) {
+  const ts = Date.now();
+  const worktreesDir = path.join(repoRoot, ".worktrees");
+  fs.mkdirSync(worktreesDir, { recursive: true });
+
+  const worktreePath = path.join(worktreesDir, `codex-${ts}`);
+  const branch = `codex/${ts}`;
+  gitChecked(repoRoot, ["worktree", "add", worktreePath, "-b", branch]);
+  return { worktreePath, branch, repoRoot, timestamp: ts };
+}
+
+export function removeWorktree(repoRoot, worktreePath) {
+  const result = git(repoRoot, ["worktree", "remove", "--force", worktreePath]);
+  if (result.status !== 0 && !result.stderr.includes("is not a working tree")) {
+    throw new Error(`Failed to remove worktree: ${result.stderr.trim()}`);
+  }
+}
+
+export function deleteWorktreeBranch(repoRoot, branch) {
+  git(repoRoot, ["branch", "-D", branch]);
+}
+
+export function getWorktreeDiff(repoRoot, branch) {
+  const result = git(repoRoot, ["diff", `HEAD...${branch}`, "--stat"]);
+  if (result.status !== 0 || !result.stdout.trim()) {
+    return { stat: "", patch: "" };
+  }
+  const stat = result.stdout.trim();
+  const patchResult = gitChecked(repoRoot, ["diff", `HEAD...${branch}`]);
+  return { stat, patch: patchResult.stdout };
+}
+
+export function applyWorktreePatch(repoRoot, branch) {
+  const patchResult = git(repoRoot, ["diff", `HEAD...${branch}`]);
+  if (patchResult.status !== 0 || !patchResult.stdout.trim()) {
+    return { applied: false, detail: "No changes to apply." };
+  }
+  const applyResult = git(repoRoot, ["apply", "--index"], { input: patchResult.stdout });
+  if (applyResult.status !== 0) {
+    return { applied: false, detail: applyResult.stderr.trim() || "Patch apply failed (conflicts?)." };
+  }
+  return { applied: true, detail: "Changes applied and staged." };
+}
+
 export function collectReviewContext(cwd, target) {
   const repoRoot = getRepoRoot(cwd);
   const state = getWorkingTreeState(cwd);
