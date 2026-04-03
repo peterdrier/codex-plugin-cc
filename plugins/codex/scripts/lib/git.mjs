@@ -194,8 +194,9 @@ export function createWorktree(repoRoot) {
 
   const worktreePath = path.join(worktreesDir, `codex-${ts}`);
   const branch = `codex/${ts}`;
+  const baseCommit = gitChecked(repoRoot, ["rev-parse", "HEAD"]).stdout.trim();
   gitChecked(repoRoot, ["worktree", "add", worktreePath, "-b", branch]);
-  return { worktreePath, branch, repoRoot, timestamp: ts };
+  return { worktreePath, branch, repoRoot, baseCommit, timestamp: ts };
 }
 
 export function removeWorktree(repoRoot, worktreePath) {
@@ -209,18 +210,18 @@ export function deleteWorktreeBranch(repoRoot, branch) {
   git(repoRoot, ["branch", "-D", branch]);
 }
 
-export function getWorktreeDiff(repoRoot, branch) {
-  const result = git(repoRoot, ["diff", `HEAD...${branch}`, "--stat"]);
+export function getWorktreeDiff(worktreePath, baseCommit) {
+  const result = git(worktreePath, ["diff", baseCommit, "--stat"]);
   if (result.status !== 0 || !result.stdout.trim()) {
     return { stat: "", patch: "" };
   }
   const stat = result.stdout.trim();
-  const patchResult = gitChecked(repoRoot, ["diff", `HEAD...${branch}`]);
+  const patchResult = gitChecked(worktreePath, ["diff", baseCommit]);
   return { stat, patch: patchResult.stdout };
 }
 
-export function applyWorktreePatch(repoRoot, branch) {
-  const patchResult = git(repoRoot, ["diff", `HEAD...${branch}`]);
+export function applyWorktreePatch(repoRoot, worktreePath, baseCommit) {
+  const patchResult = git(worktreePath, ["diff", baseCommit]);
   if (patchResult.status !== 0 || !patchResult.stdout.trim()) {
     return { applied: false, detail: "No changes to apply." };
   }

@@ -433,6 +433,7 @@ async function executeReviewRun(request) {
 
 async function executeTaskRun(request) {
   const workspaceRoot = resolveWorkspaceRoot(request.cwd);
+  const stateRoot = request.stateRoot ? resolveWorkspaceRoot(request.stateRoot) : workspaceRoot;
   ensureCodexReady(request.cwd);
 
   const taskMetadata = buildTaskRunMetadata({
@@ -442,7 +443,7 @@ async function executeTaskRun(request) {
 
   let resumeThreadId = null;
   if (request.resumeLast) {
-    const latestThread = await resolveLatestTrackedTaskThread(workspaceRoot, {
+    const latestThread = await resolveLatestTrackedTaskThread(stateRoot, {
       excludeJobId: request.jobId
     });
     if (!latestThread) {
@@ -509,11 +510,12 @@ async function executeTaskRunWithWorktree(request) {
   try {
     const execution = await executeTaskRun({
       ...request,
-      cwd: session.worktreePath
+      cwd: session.worktreePath,
+      stateRoot: request.cwd
     });
 
     const diff = diffWorktreeSession(session);
-    const rendered = renderWorktreeTaskResult(execution, session, diff);
+    const rendered = renderWorktreeTaskResult(execution, session, diff, { jobId: request.jobId });
     return {
       ...execution,
       rendered,

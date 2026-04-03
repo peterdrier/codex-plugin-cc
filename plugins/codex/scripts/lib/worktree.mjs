@@ -13,12 +13,15 @@ export function createWorktreeSession(cwd) {
 }
 
 export function diffWorktreeSession(session) {
-  return getWorktreeDiff(session.repoRoot, session.branch);
+  return getWorktreeDiff(session.worktreePath, session.baseCommit);
 }
 
 export function cleanupWorktreeSession(session, { keep = false } = {}) {
   if (keep) {
-    const result = applyWorktreePatch(session.repoRoot, session.branch);
+    const result = applyWorktreePatch(session.repoRoot, session.worktreePath, session.baseCommit);
+    if (!result.applied) {
+      return result;
+    }
     removeWorktree(session.repoRoot, session.worktreePath);
     deleteWorktreeBranch(session.repoRoot, session.branch);
     return result;

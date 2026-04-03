@@ -445,7 +445,7 @@ export function renderStoredJobResult(job, storedJob) {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-export function renderWorktreeTaskResult(execution, session, diff) {
+export function renderWorktreeTaskResult(execution, session, diff, { jobId = null } = {}) {
   const lines = [];
 
   if (execution.rendered) {
@@ -477,8 +477,9 @@ export function renderWorktreeTaskResult(execution, session, diff) {
   lines.push("");
   lines.push("Apply these changes to your working tree, or discard them:");
   lines.push("");
-  lines.push(`- **Keep**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${execution.payload?.jobId ?? "JOB_ID"} --action keep\``);
-  lines.push(`- **Discard**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${execution.payload?.jobId ?? "JOB_ID"} --action discard\``);
+  const resolvedJobId = jobId ?? "JOB_ID";
+  lines.push(`- **Keep**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${resolvedJobId} --action keep\``);
+  lines.push(`- **Discard**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${resolvedJobId} --action discard\``);
 
   return `${lines.join("\n").trimEnd()}\n`;
 }
@@ -492,7 +493,7 @@ export function renderWorktreeCleanupResult(action, result, session) {
     } else {
       lines.push(`Failed to apply changes: ${result.detail}`);
       lines.push("");
-      lines.push(`The branch \`${session.branch}\` may still be available for manual merge.`);
+      lines.push(`The worktree and branch \`${session.branch}\` have been preserved at \`${session.worktreePath}\` for manual recovery.`);
     }
   } else {
     lines.push(`Discarded worktree \`${session.worktreePath}\` and branch \`${session.branch}\`.`);
