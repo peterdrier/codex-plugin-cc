@@ -194,7 +194,8 @@ export function createWorktree(repoRoot) {
 
   // Ensure .worktrees/ is excluded from the target repo without modifying tracked files.
   // Use git rev-parse to resolve the real git dir (handles linked worktrees where .git is a file).
-  const gitDir = gitChecked(repoRoot, ["rev-parse", "--git-dir"]).stdout.trim();
+  const rawGitDir = gitChecked(repoRoot, ["rev-parse", "--git-dir"]).stdout.trim();
+  const gitDir = path.resolve(repoRoot, rawGitDir);
   const excludePath = path.join(gitDir, "info", "exclude");
   const excludeContent = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, "utf8") : "";
   if (!excludeContent.includes(".worktrees")) {
