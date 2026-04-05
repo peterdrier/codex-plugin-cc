@@ -192,8 +192,10 @@ export function createWorktree(repoRoot) {
   const worktreesDir = path.join(repoRoot, ".worktrees");
   fs.mkdirSync(worktreesDir, { recursive: true });
 
-  // Ensure .worktrees/ is excluded from the target repo without modifying tracked files
-  const excludePath = path.join(repoRoot, ".git", "info", "exclude");
+  // Ensure .worktrees/ is excluded from the target repo without modifying tracked files.
+  // Use git rev-parse to resolve the real git dir (handles linked worktrees where .git is a file).
+  const gitDir = gitChecked(repoRoot, ["rev-parse", "--git-dir"]).stdout.trim();
+  const excludePath = path.join(gitDir, "info", "exclude");
   const excludeContent = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, "utf8") : "";
   if (!excludeContent.includes(".worktrees")) {
     fs.mkdirSync(path.dirname(excludePath), { recursive: true });
