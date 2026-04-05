@@ -478,8 +478,9 @@ export function renderWorktreeTaskResult(execution, session, diff, { jobId = nul
   lines.push("Apply these changes to your working tree, or discard them:");
   lines.push("");
   const resolvedJobId = jobId ?? "JOB_ID";
-  lines.push(`- **Keep**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${resolvedJobId} --action keep\``);
-  lines.push(`- **Discard**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${resolvedJobId} --action discard\``);
+  const cwdFlag = session.repoRoot ? ` --cwd "${session.repoRoot}"` : "";
+  lines.push(`- **Keep**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${resolvedJobId} --action keep${cwdFlag}\``);
+  lines.push(`- **Discard**: \`node "\${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" worktree-cleanup ${resolvedJobId} --action discard${cwdFlag}\``);
 
   return `${lines.join("\n").trimEnd()}\n`;
 }
