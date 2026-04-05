@@ -490,6 +490,8 @@ export function renderWorktreeCleanupResult(action, result, session) {
   if (action === "keep") {
     if (result.applied) {
       lines.push(`Applied changes from \`${session.branch}\` and cleaned up.`);
+    } else if (result.detail === "No changes to apply.") {
+      lines.push(`No changes to apply. Worktree and branch \`${session.branch}\` cleaned up.`);
     } else {
       lines.push(`Failed to apply changes: ${result.detail}`);
       lines.push("");
